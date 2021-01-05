@@ -155,13 +155,13 @@ void build(ObjectIr *ir) {
 	size_t PointerToSymbolTable = fisrt_section_offset + size_of_sections + number_of_relocations * 10;
 
 	// COFF Header
-	fwrite16(out, 0x14c); // Machine
+	fwrite16(out, 0x14c);                                   // Machine
 	fwrite16(out, cvec_pchar_size(&ir->section_names_set)); // NumberOfSections
-	fwrite32(out, 0); // TimeDataStamp
-	fwrite32(out, PointerToSymbolTable); // PointerToSymbolTable
-	fwrite32(out, ir->number_of_symbols); // NumberOfSymbols
-	fwrite16(out, 0); // SizeOfOptionalHeader
-	fwrite16(out, 0); // Characteristics
+	fwrite32(out, 0);                                       // TimeDataStamp
+	fwrite32(out, PointerToSymbolTable);                    // PointerToSymbolTable
+	fwrite32(out, ir->number_of_symbols);                   // NumberOfSymbols
+	fwrite16(out, 0);                                       // SizeOfOptionalHeader
+	fwrite16(out, 0);                                       // Characteristics
 
 	// Section Headers
 	printf("Writing section headers {\n");
@@ -247,7 +247,6 @@ void build(ObjectIr *ir) {
 				if (!epep_get_section_relocation_by_index(epep, &sh, &rel, rel_i)) {
 					ERROR_EPEP(epep);
 				}
-				printf("-------------{ %d, %d, %d }\n", rel.VirtualAddress, rel.SymbolTableIndex, rel.Type);
 				rel.VirtualAddress += object->section_offsets[sec_i];
 				{
 					size_t index = rel.SymbolTableIndex;
@@ -357,7 +356,7 @@ void build(ObjectIr *ir) {
 	}
 
 	// COFF String Table
-	fwrite32(out, cvec_pchar_size(&strtab));
+	fwrite32(out, cvec_pchar_size(&strtab) + 4);
 	fwrite(strtab, 1, cvec_pchar_size(&strtab), out);
 	printf("}\n");
 }
