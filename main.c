@@ -275,7 +275,7 @@ void build(ObjectIr *ir) {
 					if (old_sym.name) {
 						printf("Symbol with Relocation: %s\n", old_sym.name);
 					} else {
-						printf("Internal error: Symbol of this relocation not found");
+						printf("Internal error: Symbol of %s relocation not found", name);
 						exit(-1);
 					}
 
