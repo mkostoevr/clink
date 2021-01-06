@@ -145,7 +145,7 @@ void build(ObjectIr *ir) {
 		size_of_sections += si.size;
 		number_of_relocations += si.number_of_relocations;
 	}
-	printf("Done: %u\n", size_of_sections);
+	printf("Done: %u & %u\n", size_of_sections, number_of_relocations);
 
 	size_t fisrt_section_offset = 20 + 40 * cvec_pchar_size(&ir->section_names_set);
 	size_t offset_to_first_relocation = fisrt_section_offset + size_of_sections;
@@ -155,6 +155,7 @@ void build(ObjectIr *ir) {
 	size_t PointerToSymbolTable = fisrt_section_offset + size_of_sections + number_of_relocations * 10;
 
 	// COFF Header
+	printf("Writing COFF header... ");
 	fwrite16(out, 0x14c);                                   // Machine
 	fwrite16(out, cvec_pchar_size(&ir->section_names_set)); // NumberOfSections
 	fwrite32(out, 0);                                       // TimeDataStamp
@@ -162,6 +163,7 @@ void build(ObjectIr *ir) {
 	fwrite32(out, ir->number_of_symbols);                   // NumberOfSymbols
 	fwrite16(out, 0);                                       // SizeOfOptionalHeader
 	fwrite16(out, 0);                                       // Characteristics
+	printf("Done.\n");
 
 	// Section Headers
 	printf("Writing section headers {\n");
@@ -170,6 +172,7 @@ void build(ObjectIr *ir) {
 		SectionInfo si = cdict_CStr_SectionInfo_get_v(&ir->size_per_section, name);
 
 		// Name
+		printf(" Writing %s Section Header... ", name);
 		if (strlen(name) <= 8) {
 			for (size_t i = 0; i < 8; i++) {
 				size_t sl = strlen(name);
@@ -194,15 +197,17 @@ void build(ObjectIr *ir) {
 		fwrite16(out, si.number_of_relocations);  // NumberOfRelocations
 		fwrite16(out, 0);                         // NumberOfLinenumbers
 		fwrite32(out, si.characteristics);        // Characteristics
-		printf(" %s\n", name);
+		printf("Done.\n");
 	}
 	printf("}\n");
 
 	// Section data
+	printf("Writing sections {\n");
 	for (size_t sec_i = 0; sec_i < cvec_pchar_size(&ir->section_names_set); sec_i++) {
 		char *name = ir->section_names_set[sec_i];
 		SectionInfo si = cdict_CStr_SectionInfo_get_v(&ir->size_per_section, name);
 
+		printf(" Writing %s... ", name);
 		for (size_t i = 0; i < cvec_ObjIdSecId_size(&si.source); i++) {
 			ObjIdSecId id = cvec_ObjIdSecId_at(&si.source, i);
 			CoffObject *object = &ir->objects[id.obj_id];
@@ -218,27 +223,34 @@ void build(ObjectIr *ir) {
 			}
 			fwrite(buf, 1, sh.SizeOfRawData, out);
 		}
+		printf("Done.\n");
 	}
+	printf("}\n");
 
 	// COFF Relocations
-	for (size_t i = 0; i < cvec_CoffObject_size(&ir->objects); i++) {
-		CoffObject *object = &ir->objects[i];
-		Epep *epep = &object->epep;
+	printf("Writing COFF Relocations {\n");
+	for (size_t sec_i = 0; sec_i < cvec_pchar_size(&ir->section_names_set); sec_i++) {
+		char *name = ir->section_names_set[sec_i];
+		SectionInfo si = cdict_CStr_SectionInfo_get_v(&ir->size_per_section, name);
 
-		size_t strtab_size = 0;
-		if (!epep_get_string_table_size(epep, &strtab_size)) {
-			ERROR_EPEP(epep);
-		}
+		printf(" Writing relocations of %s {\n", name);
+		for (size_t i = 0; i < cvec_ObjIdSecId_size(&si.source); i++) {
+			ObjIdSecId id = cvec_ObjIdSecId_at(&si.source, i);
+			CoffObject *object = &ir->objects[id.obj_id];
+			Epep *epep = &object->epep;
 
-		char *obj_strtab = malloc(strtab_size);
-		if (!epep_get_string_table(epep, obj_strtab)) {
-			ERROR_EPEP(epep);
-		}
+			size_t strtab_size = 0;
+			if (!epep_get_string_table_size(epep, &strtab_size)) {
+				ERROR_EPEP(epep);
+			}
 
-		for (size_t sec_i = 0; sec_i < epep->coffFileHeader.NumberOfSections; sec_i++) {
+			char *obj_strtab = malloc(strtab_size);
+			if (!epep_get_string_table(epep, obj_strtab)) {
+				ERROR_EPEP(epep);
+			}
+
 			EpepSectionHeader sh = { 0 };
-
-			if (!epep_get_section_header_by_index(epep, &sh, sec_i)) {
+			if (!epep_get_section_header_by_index(epep, &sh, id.sec_id)) {
 				ERROR_EPEP(epep);
 			}
 			for (size_t rel_i = 0; rel_i < sh.NumberOfRelocations; rel_i++) {
@@ -247,6 +259,7 @@ void build(ObjectIr *ir) {
 				if (!epep_get_section_relocation_by_index(epep, &sh, &rel, rel_i)) {
 					ERROR_EPEP(epep);
 				}
+				printf("  { %02x, %02x, %02x }", rel.VirtualAddress, rel.SymbolTableIndex, rel.Type);
 				rel.VirtualAddress += object->section_offsets[sec_i];
 				{
 					size_t index = rel.SymbolTableIndex;
@@ -272,19 +285,21 @@ void build(ObjectIr *ir) {
 
 					Symbol old_sym = cdict_CStr_Symbol_get_v(&ir->symtab, name);
 
-					if (old_sym.name) {
-						printf("Symbol with Relocation: %s\n", old_sym.name);
-					} else {
+					if (old_sym.name == NULL) {
 						printf("Internal error: Symbol of %s relocation not found", name);
 						exit(-1);
 					}
 
 					rel.SymbolTableIndex = get_section_number(&ir->sym_name_set, name);
+					printf(" -> { %02x, %02x, %02x }: ", rel.VirtualAddress, rel.SymbolTableIndex, rel.Type);
+					printf("New relocation of %s in %s\n", name, sh.Name);
 				}
 				fwrite(&rel, 1, 10, out);
 			}
 		}
+		printf(" }\n");
 	}
+	printf("}\n");
 
 	// Symbols Table
 	printf("Writing symbols {\n");
@@ -354,11 +369,13 @@ void build(ObjectIr *ir) {
 			fwrite(&sym.auxes[aux_i].symbol, 1, 18, out);
 		}
 	}
+	printf("}\n");
 
 	// COFF String Table
+	printf("Writing COFF String Table... ");
 	fwrite32(out, cvec_pchar_size(&strtab) + 4);
 	fwrite(strtab, 1, cvec_pchar_size(&strtab), out);
-	printf("}\n");
+	printf("Done.\n");
 }
 
 void add_name_to_set(char *sym_name, char ***set) {
