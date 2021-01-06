@@ -279,6 +279,10 @@ void build(ObjectIr *ir) {
 						name[8] = '\0';
 					}
 
+					if (!strcmp(name, "_EXPORTS")) {
+						strcpy(name, "EXPORTS");
+					}
+
 					if (sym.symbol.StorageClass != 2) {
 						sprintf(name, "%s@%s", name, object->name);
 					}
@@ -462,6 +466,10 @@ int main(int argc, char **argv) {
 			} else {
 				memcpy(name, sym.symbol.ShortName, 8);
 				name[8] = '\0';
+			}
+
+			if (!strcmp(name, "_EXPORTS")) {
+				strcpy(name, "EXPORTS");
 			}
 
 			if (sym.symbol.StorageClass != 2) {
