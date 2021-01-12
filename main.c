@@ -64,6 +64,7 @@ typedef struct {
 	EpepCoffSymbol *auxes;
 	char *name;
 	size_t object_index;
+	size_t index;
 } Symbol;
 
 #define CDICT_VAL_T Symbol
@@ -294,7 +295,7 @@ void build(ObjectIr *ir) {
 						exit(-1);
 					}
 
-					rel.SymbolTableIndex = get_section_number(&ir->sym_name_set, name);
+					rel.SymbolTableIndex = old_sym.index;
 					printf(" -> { %02x, %02x, %02x }: ", rel.VirtualAddress, rel.SymbolTableIndex, rel.Type);
 					printf("New relocation of %s in %s\n", name, sh.Name);
 				}
@@ -483,6 +484,7 @@ int main(int argc, char **argv) {
 				}
 
 				EpepCoffSymbol *auxes = cvec_EpepCoffSymbol_new(1);
+				size_t index = number_of_symbols;
 
 				for (size_t aux_i = 0; aux_i < sym.symbol.NumberOfAuxSymbols; aux_i++) {
 					EpepCoffSymbol aux = { 0 };
@@ -494,13 +496,13 @@ int main(int argc, char **argv) {
 					number_of_symbols++;
 				}
 
-				Symbol new_sym = { sym, auxes, strdup(name), i };
+				Symbol new_sym = { sym, auxes, strdup(name), i, index };
 				if (!cdict_CStr_Symbol_add_vv(&symtab, strdup(name), new_sym, CDICT_NO_CHECK)) {
 					ERROR_CDICT(&symtab);
 				}
 				number_of_symbols++;
 
-				printf("  Symbol #%u: %s (%u auxes)\n", sym_i, name, cvec_EpepCoffSymbol_size(&auxes));
+				printf("  Symbol #%u: %s (%u auxes, #%u)\n", sym_i, name, cvec_EpepCoffSymbol_size(&auxes), number_of_symbols - 1);
 
 				add_name_to_set(strdup(name), &sym_name_set);
 			}
