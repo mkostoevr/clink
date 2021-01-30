@@ -98,7 +98,7 @@ void fwrite32(FILE *f, uint32_t d) {
 typedef struct {
 	CoffObject *objects;
 	char **section_names_set;
-	CDict_CStr_SectionInfo size_per_section;
+	CDict_CStr_SectionInfo info_per_section;
 	CDict_CStr_Symbol symtab;
 	char **sym_name_set;
 	size_t number_of_symbols;
@@ -134,7 +134,7 @@ void build(ObjectIr *ir) {
 	for (size_t sec_i = 0; sec_i < cvec_pchar_size(&ir->section_names_set); sec_i++) {
 		char *name = ir->section_names_set[sec_i];
 
-		SectionInfo si = cdict_CStr_SectionInfo_get_v(&ir->size_per_section, name);
+		SectionInfo si = cdict_CStr_SectionInfo_get_v(&ir->info_per_section, name);
 		size_of_sections += si.size;
 		number_of_relocations += si.number_of_relocations;
 	}
@@ -162,7 +162,7 @@ void build(ObjectIr *ir) {
 	printf("Writing section headers {\n");
 	for (size_t sec_i = 0; sec_i < cvec_pchar_size(&ir->section_names_set); sec_i++) {
 		char *name = ir->section_names_set[sec_i];
-		SectionInfo si = cdict_CStr_SectionInfo_get_v(&ir->size_per_section, name);
+		SectionInfo si = cdict_CStr_SectionInfo_get_v(&ir->info_per_section, name);
 
 		// Name
 		printf(" Writing %s Section Header... ", name);
@@ -198,7 +198,7 @@ void build(ObjectIr *ir) {
 	printf("Writing sections {\n");
 	for (size_t sec_i = 0; sec_i < cvec_pchar_size(&ir->section_names_set); sec_i++) {
 		char *name = ir->section_names_set[sec_i];
-		SectionInfo si = cdict_CStr_SectionInfo_get_v(&ir->size_per_section, name);
+		SectionInfo si = cdict_CStr_SectionInfo_get_v(&ir->info_per_section, name);
 
 		printf(" Writing %s... ", name);
 		for (size_t i = 0; i < cvec_ObjIdSecId_size(&si.source); i++) {
@@ -224,7 +224,7 @@ void build(ObjectIr *ir) {
 	printf("Writing COFF Relocations {\n");
 	for (size_t sec_i = 0; sec_i < cvec_pchar_size(&ir->section_names_set); sec_i++) {
 		char *name = ir->section_names_set[sec_i];
-		SectionInfo si = cdict_CStr_SectionInfo_get_v(&ir->size_per_section, name);
+		SectionInfo si = cdict_CStr_SectionInfo_get_v(&ir->info_per_section, name);
 
 		printf(" Writing relocations of %s {\n", name);
 		for (size_t i = 0; i < cvec_ObjIdSecId_size(&si.source); i++) {
@@ -421,10 +421,10 @@ int main(int argc, char **argv) {
 		ERROR_CDICT(&symtab);
 	}
 
-	CDict_CStr_SectionInfo size_per_section;
+	CDict_CStr_SectionInfo info_per_section;
 
-	if (!cdict_CStr_SectionInfo_init(&size_per_section)) {
-		ERROR_CDICT(&size_per_section);
+	if (!cdict_CStr_SectionInfo_init(&info_per_section)) {
+		ERROR_CDICT(&info_per_section);
 	}
 
 	for (size_t i = 0; i < cvec_CoffObject_size(&objects); i++) {
@@ -524,7 +524,7 @@ int main(int argc, char **argv) {
 
 			add_name_to_set(strdup(name), &section_names_set);
 
-			SectionInfo si = cdict_CStr_SectionInfo_get_v(&size_per_section, name);
+			SectionInfo si = cdict_CStr_SectionInfo_get_v(&info_per_section, name);
 			if (si.source == NULL) {
 				si.source = cvec_ObjIdSecId_new(32);
 			}
@@ -536,7 +536,7 @@ int main(int argc, char **argv) {
 			si.characteristics |= sh.Characteristics;
 			si.number_of_relocations += sh.NumberOfRelocations;
 			cvec_ObjIdSecId_push_back(&si.source, (ObjIdSecId){ i, sec_i });
-			cdict_CStr_SectionInfo_add_vv(&size_per_section, strdup(name), si, CDICT_REPLACE_EXIST);
+			cdict_CStr_SectionInfo_add_vv(&info_per_section, strdup(name), si, CDICT_REPLACE_EXIST);
 
 			printf("  Section #%llu {\n", sec_i);
 			printf("   Name:                      %s\n", name);
@@ -553,7 +553,7 @@ int main(int argc, char **argv) {
 	ObjectIr ir;
 	ir.objects = objects;
 	ir.section_names_set = section_names_set;
-	ir.size_per_section = size_per_section;
+	ir.info_per_section = info_per_section;
 	ir.symtab = symtab;
 	ir.sym_name_set = sym_name_set;
 	ir.number_of_symbols = number_of_symbols;
