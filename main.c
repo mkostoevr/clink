@@ -95,12 +95,6 @@ void fwrite32(FILE *f, uint32_t d) {
 	fputc((d & 0xff000000) >> 24, f);
 }
 
-void fwrites(FILE *f, char *s) {
-	for (char *p = s; *p; p++) {
-		fwrite8(f, *p);
-	}
-}
-
 typedef struct {
 	CoffObject *objects;
 	char **section_names_set;
