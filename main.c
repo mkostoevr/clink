@@ -69,10 +69,6 @@ typedef struct {
 #define CDICT_INST
 #include "cdict/cdict.h"
 
-#define CDICT_VAL_T size_t
-#define CDICT_INST
-#include "cdict/cdict.h"
-
 #define ERROR_EPEP(epep) printf("Error: epep returned %u at "__FILE__":%u", \
                                 (epep)->error_code, __LINE__); exit(-1)
 
