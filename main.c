@@ -7,8 +7,6 @@
 #include <assert.h>
 #include <string.h>
 
-#define PFL printf(__FILE__"%u\n", __LINE__)
-
 #define EPEP_INST
 #include "epep/epep.h"
 
