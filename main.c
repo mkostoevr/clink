@@ -10,37 +10,18 @@
 #define EPEP_INST
 #include "epep/epep.h"
 
+typedef char *pchar;
+
 typedef struct {
 	Epep epep;
 	char *name;
 	size_t *section_offsets;
 } CoffObject;
 
-#define CVEC_INST
-#define CVEC_TYPE CoffObject
-#include "cvec/cvec.h"
-
-#define CVEC_INST
-#define CVEC_TYPE size_t
-#include "cvec/cvec.h"
-
-typedef char *pchar;
-#define CVEC_INST
-#define CVEC_TYPE pchar
-#include "cvec/cvec.h"
-
-#define CVEC_INST
-#define CVEC_TYPE char
-#include "cvec/cvec.h"
-
 typedef struct {
 	size_t obj_id;
 	size_t sec_id;
 } ObjIdSecId;
-
-#define CVEC_INST
-#define CVEC_TYPE ObjIdSecId
-#include "cvec/cvec.h"
 
 typedef struct {
 	ObjIdSecId *source;
@@ -48,14 +29,6 @@ typedef struct {
 	size_t size;
 	size_t number_of_relocations;
 } SectionInfo;
-
-#define CDICT_VAL_T SectionInfo
-#define CDICT_INST
-#include "cdict/cdict.h"
-
-#define CVEC_INST
-#define CVEC_TYPE EpepCoffSymbol
-#include "cvec/cvec.h"
 
 typedef struct {
 	EpepCoffSymbol sym;
@@ -65,9 +38,46 @@ typedef struct {
 	size_t index;
 } Symbol;
 
+#define CDICT_VAL_T SectionInfo
+#define CDICT_INST
+#include "cdict/cdict.h"
+
 #define CDICT_VAL_T Symbol
 #define CDICT_INST
 #include "cdict/cdict.h"
+
+typedef struct {
+	CoffObject *objects;
+	char **section_names_set;
+	CDict_CStr_SectionInfo info_per_section;
+	CDict_CStr_Symbol symtab;
+	char **sym_name_set;
+	size_t number_of_symbols;
+} ObjectIr;
+
+#define CVEC_INST
+#define CVEC_TYPE CoffObject
+#include "cvec/cvec.h"
+
+#define CVEC_INST
+#define CVEC_TYPE size_t
+#include "cvec/cvec.h"
+
+#define CVEC_INST
+#define CVEC_TYPE pchar
+#include "cvec/cvec.h"
+
+#define CVEC_INST
+#define CVEC_TYPE char
+#include "cvec/cvec.h"
+
+#define CVEC_INST
+#define CVEC_TYPE ObjIdSecId
+#include "cvec/cvec.h"
+
+#define CVEC_INST
+#define CVEC_TYPE EpepCoffSymbol
+#include "cvec/cvec.h"
 
 #define ERROR_EPEP(epep) printf("Error: epep returned %u at "__FILE__":%u", \
                                 (epep)->error_code, __LINE__); exit(-1)
@@ -91,15 +101,6 @@ void fwrite32(FILE *f, uint32_t d) {
 	fputc((d & 0xff000000) >> 24, f);
 }
 
-typedef struct {
-	CoffObject *objects;
-	char **section_names_set;
-	CDict_CStr_SectionInfo info_per_section;
-	CDict_CStr_Symbol symtab;
-	char **sym_name_set;
-	size_t number_of_symbols;
-} ObjectIr;
-
 size_t strtab_add(char **strtab, char *str) {
 	size_t res = cvec_char_size(strtab);
 
@@ -118,6 +119,16 @@ size_t get_section_number(char ***section_names_set, char *sec_name) {
 		}
 	}
 	return 0;
+}
+
+void add_name_to_set(char *sym_name, char ***set) {
+	for (size_t i = 0; i < cvec_pchar_size(set); i++) {
+		char *it = cvec_pchar_at(set, i);
+		if (!strcmp(it, sym_name)) {
+			return;
+		}
+	}
+	cvec_pchar_push_back(set, sym_name);
 }
 
 void build(ObjectIr *ir) {
@@ -369,16 +380,6 @@ void build(ObjectIr *ir) {
 	fwrite32(out, cvec_pchar_size(&strtab) + 4);
 	fwrite(strtab, 1, cvec_pchar_size(&strtab), out);
 	printf("Done.\n");
-}
-
-void add_name_to_set(char *sym_name, char ***set) {
-	for (size_t i = 0; i < cvec_pchar_size(set); i++) {
-		char *it = cvec_pchar_at(set, i);
-		if (!strcmp(it, sym_name)) {
-			return;
-		}
-	}
-	cvec_pchar_push_back(set, sym_name);
 }
 
 int main(int argc, char **argv) {
