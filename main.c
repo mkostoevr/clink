@@ -382,7 +382,7 @@ static void build(ObjectIr *ir) {
 	printf("Done.\n");
 }
 
-int main(int argc, char **argv) {
+static ObjectIr parse_objects(int argc, char **argv) {
 	CoffObject *objects = cvec_CoffObject_new(128);
 	char **section_names_set = cvec_pchar_new(4);
 	char **sym_name_set = cvec_pchar_new(128);
@@ -546,7 +546,6 @@ int main(int argc, char **argv) {
 		printf("}\n");
 	}
 
-	// Build new COFF file
 	ObjectIr ir;
 	ir.objects = objects;
 	ir.section_names_set = section_names_set;
@@ -554,6 +553,10 @@ int main(int argc, char **argv) {
 	ir.symtab = symtab;
 	ir.sym_name_set = sym_name_set;
 	ir.number_of_symbols = number_of_symbols;
+	return ir;
+}
 
+int main(int argc, char **argv) {
+	ObjectIr ir = parse_objects(argc, argv);
 	build(&ir);
 }
