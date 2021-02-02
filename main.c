@@ -85,23 +85,23 @@ typedef struct {
 #define ERROR_CDICT(cdict) printf("Error: cdict returned %u at "__FILE__":%u", \
                                   (cdict)->error_code, __LINE__); exit(-1);
 
-void fwrite8(FILE *f, uint8_t b) {
+static void fwrite8(FILE *f, uint8_t b) {
 	fputc(b, f);
 }
 
-void fwrite16(FILE *f, uint16_t w) {
+static void fwrite16(FILE *f, uint16_t w) {
 	fputc((w & 0x00ff) >> 0, f);
 	fputc((w & 0xff00) >> 8, f);
 }
 
-void fwrite32(FILE *f, uint32_t d) {
+static void fwrite32(FILE *f, uint32_t d) {
 	fputc((d & 0x000000ff) >> 0, f);
 	fputc((d & 0x0000ff00) >> 8, f);
 	fputc((d & 0x00ff0000) >> 16, f);
 	fputc((d & 0xff000000) >> 24, f);
 }
 
-size_t strtab_add(char **strtab, char *str) {
+static size_t strtab_add(char **strtab, char *str) {
 	size_t res = cvec_char_size(strtab);
 
 	for (char *p = str; *p; p++) {
@@ -111,7 +111,7 @@ size_t strtab_add(char **strtab, char *str) {
 	return res + 4;
 }
 
-size_t get_section_number(char ***section_names_set, char *sec_name) {
+static size_t get_section_number(char ***section_names_set, char *sec_name) {
 	for (size_t i = 0; i < cvec_pchar_size(section_names_set); i++) {
 		char *it = cvec_pchar_at(section_names_set, i);
 		if (!strcmp(it, sec_name)) {
@@ -121,7 +121,7 @@ size_t get_section_number(char ***section_names_set, char *sec_name) {
 	return 0;
 }
 
-void add_name_to_set(char *sym_name, char ***set) {
+static void add_name_to_set(char *sym_name, char ***set) {
 	for (size_t i = 0; i < cvec_pchar_size(set); i++) {
 		char *it = cvec_pchar_at(set, i);
 		if (!strcmp(it, sym_name)) {
@@ -131,7 +131,7 @@ void add_name_to_set(char *sym_name, char ***set) {
 	cvec_pchar_push_back(set, sym_name);
 }
 
-void build(ObjectIr *ir) {
+static void build(ObjectIr *ir) {
 	FILE *out = fopen("a.out.obj", "wb");
 	char *strtab = cvec_char_new(1024);
 	size_t size_of_sections = 0;
@@ -557,4 +557,3 @@ int main(int argc, char **argv) {
 
 	build(&ir);
 }
-
