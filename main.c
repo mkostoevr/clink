@@ -1,6 +1,3 @@
-// TODO: Substract section's RVA from external and static defined symbol's value
-// TODO: Substract section's RVA from relocations
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
