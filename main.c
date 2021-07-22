@@ -415,7 +415,7 @@ static void build(ObjectIr *ir) {
 			sym.sym.symbol.Value += section_offset;
 
 			if (strlen(sym.name) <= 8) {
-				strcpy(sym.sym.symbol.ShortName, sym.name);
+				strcpy(sym.sym.symbol.ShortName, sym.name, 8);
 			} else {
 				sym.sym.symbol.Zeroes = 0;
 				sym.sym.symbol.Offset = strtab_add(&strtab, name);
