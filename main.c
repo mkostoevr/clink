@@ -597,6 +597,18 @@ static ObjectIr parse_objects(int argc, char **argv) {
 			printf("   Characteristics:           %08x\n", sh.Characteristics);
 			printf("   Offset in the big section: %u\n", objects[i].section_offsets[sec_i]);
 			printf("  }\n");
+
+			if (sh.VirtualAddress != 0) {
+				printf("\n\n\n\n");
+				for (int i = 0; i < 42; i++) {
+					printf("!!!");
+				}
+				printf("\n\n\n\n\nWARNING: Handling of section with Virtual Address another that 0 is not implemented\n\n\n\n\n");
+				for (int i = 0; i < 42; i++) {
+					printf("!!!");
+				}
+				printf("\n\n\n\n");
+			}
 		}
 		printf(" }\n");
 		printf("}\n");
