@@ -368,7 +368,9 @@ static void build(ObjectIr *ir) {
 
 		if (sym.sym.symbol.SectionNumber == 0xffff ||
 			sym.sym.symbol.SectionNumber == 0xfffe ||
-			(sym.sym.symbol.StorageClass != 2 && sym.sym.symbol.StorageClass != 3)) {
+			(sym.sym.symbol.StorageClass != 2 &&  // Not an external symbol
+			 sym.sym.symbol.StorageClass != 3 &&  // Not a static symbol
+			 sym.sym.symbol.StorageClass != 6)) { // Not a label
 			fwrite(&sym.sym.symbol, 1, 18, out);
 		} else {
 			size_t sec_name_max = 1024;
