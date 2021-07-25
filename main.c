@@ -445,8 +445,8 @@ static void build(ObjectIr *ir, const char *outname) {
 
 	// COFF String Table
 	log_info("Writing COFF String Table... ");
-	fwrite32(out, cvec_pchar_size(&strtab) + 4);
-	fwrite(strtab, 1, cvec_pchar_size(&strtab), out);
+	fwrite32(out, cvec_char_size(&strtab) + 4);
+	fwrite(strtab, 1, cvec_char_size(&strtab), out);
 	log_info("Done.\n");
 }
 
