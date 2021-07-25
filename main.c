@@ -422,7 +422,7 @@ static void build(ObjectIr *ir, const char *outname) {
 			sym.sym.symbol.SectionNumber = get_section_number(&ir->section_names_set, sec_name);
 
 			if (sym.sym.symbol.SectionNumber == 0) {
-				printf("Internal error: %s section is not found in output file");
+				printf("Internal error: %s section is not found in output file", sec_name);
 				exit(-1);
 			}
 
