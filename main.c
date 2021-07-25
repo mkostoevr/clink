@@ -121,7 +121,7 @@ typedef struct {
 
 static int emit_logs;
 
-static int log_info(const char *fmt, ...) {
+static void log_info(const char *fmt, ...) {
 	if (emit_logs) {
 		va_list ap;
 		va_start(ap, fmt);
