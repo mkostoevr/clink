@@ -43,7 +43,11 @@ const char *epep_errors[] = {
 	"EPEP_ERR_INVALID_BASE_RELOCATION_BLOCK_BASE_RELOCATION_OFFSET",
 	"EPEP_ERR_INVALID_SECTION_RELOCATION_OFFSET",
 	"EPEP_ERR_INVALID_LINENUMBER_OFFSET",
+	"EPEP_ERR_INVALID_NUMBER_OF_RELOCATIONS_FOR_EXTENDED",
 };
+
+static_assert(sizeof(epep_errors) / sizeof(epep_errors[0]) == EPEP_ERR_END,
+              "Each EPEP error should be stringified.");
 
 typedef char *pchar;
 
@@ -325,10 +329,15 @@ static void build(ObjectIr *ir, const char *outname) {
 			if (!epep_get_section_header_by_index(epep, &sh, id.sec_id)) {
 				ERROR_EPEP(epep);
 			}
-			for (size_t rel_i = 0; rel_i < sh.NumberOfRelocations; rel_i++) {
+			size_t number_of_relocations = 0;
+			int extended = 0;
+			if (!epep_get_section_number_of_relocations_x(epep, &sh, &number_of_relocations, &extended)) {
+				ERROR_EPEP(epep);
+			}
+			for (size_t rel_i = 0; rel_i < number_of_relocations; rel_i++) {
 				EpepCoffRelocation rel = { 0 };
 
-				if (!epep_get_section_relocation_by_index(epep, &sh, &rel, rel_i)) {
+				if (!epep_get_section_relocation_by_index_x(epep, &sh, &rel, rel_i, extended)) {
 					ERROR_EPEP(epep);
 				}
 				log_info("  { %02x, %02x, %02x }", rel.VirtualAddress, rel.SymbolTableIndex, rel.Type);
@@ -616,9 +625,15 @@ static ObjectIr parse_objects(int argc, char **argv) {
 			size_t sec_offset = si.size;
 			cvec_size_t_push_back(&objects[i].section_offsets, sec_offset);
 
+			size_t number_of_relocations = 0;
+			int unused = 0;
+			if (!epep_get_section_number_of_relocations_x(epep, &sh, &number_of_relocations, &unused)) {
+				ERROR_EPEP(epep);
+			}
+
 			si.size += sh.SizeOfRawData;
 			si.characteristics |= sh.Characteristics;
-			si.number_of_relocations += sh.NumberOfRelocations;
+			si.number_of_relocations += number_of_relocations;
 			if (si.number_of_relocations > 0xffff && !si.number_of_relocations_is_extended) {
 				// One more relocation to store the actual relocation number
 				si.number_of_relocations++;
