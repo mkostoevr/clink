@@ -63,6 +63,8 @@ typedef struct {
 	uint32_t characteristics;
 	size_t size;
 	size_t number_of_relocations;
+	// Number of relocations is greater than 2^16 - 1
+	int number_of_relocations_is_extended;
 } SectionInfo;
 
 typedef struct {
@@ -240,7 +242,12 @@ static void build(ObjectIr *ir, const char *outname) {
 		fwrite32(out, offset_to_next_relocation); // PointerToRelocations
 		offset_to_next_relocation += si.number_of_relocations * 10;
 		fwrite32(out, 0);                         // PointerToLinenumbers
-		fwrite16(out, si.number_of_relocations);  // NumberOfRelocations
+		// NumberOfRelocations
+		if (si.number_of_relocations_is_extended) {
+			fwrite16(out, 0xffff);
+		} else {
+			fwrite16(out, si.number_of_relocations);
+		}
 		fwrite16(out, 0);                         // NumberOfLinenumbers
 		fwrite32(out, si.characteristics);        // Characteristics
 		log_info("Done.\n");
@@ -294,6 +301,11 @@ static void build(ObjectIr *ir, const char *outname) {
 		SectionInfo si = cdict_CStr_SectionInfo_get_v(&ir->info_per_section, name);
 
 		log_info(" Writing relocations of %s {\n", name);
+		if (si.number_of_relocations_is_extended) {
+			EpepCoffRelocation rel = { 0 };
+			rel.VirtualAddress = si.number_of_relocations;
+			fwrite(&rel, 1, 10, out);
+		}
 		for (size_t i = 0; i < cvec_ObjIdSecId_size(&si.source); i++) {
 			ObjIdSecId id = cvec_ObjIdSecId_at(&si.source, i);
 			CoffObject *object = &ir->objects[id.obj_id];
@@ -607,6 +619,13 @@ static ObjectIr parse_objects(int argc, char **argv) {
 			si.size += sh.SizeOfRawData;
 			si.characteristics |= sh.Characteristics;
 			si.number_of_relocations += sh.NumberOfRelocations;
+			if (si.number_of_relocations > 0xffff && !si.number_of_relocations_is_extended) {
+				// One more relocation to store the actual relocation number
+				si.number_of_relocations++;
+				si.number_of_relocations_is_extended = 1;
+				const uint32_t flag_IMAGE_SCN_LNK_NRELOC_OVFL = 0x01000000;
+				si.characteristics |= flag_IMAGE_SCN_LNK_NRELOC_OVFL;
+			}
 			cvec_ObjIdSecId_push_back(&si.source, (ObjIdSecId){ i, sec_i });
 			cdict_CStr_SectionInfo_add_vv(&info_per_section, strdup(name), si, CDICT_REPLACE_EXIST);
 
