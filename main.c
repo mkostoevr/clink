@@ -67,7 +67,7 @@ typedef struct {
 	uint32_t characteristics;
 	size_t size;
 	size_t number_of_relocations;
-	// Number of relocations is greater than 2^16 - 1
+	// Number of relocations is greater than 2^16 - 1.
 	int number_of_relocations_is_extended;
 } SectionInfo;
 
@@ -275,15 +275,11 @@ static void build(ObjectIr *ir, const char *outname) {
 				ERROR_EPEP(epep);
 			}
 
-			// If the section contains uninitialized data (BSS)
-			// it should be filled by zeroes
-			// Yes, current implementation emits BSS sections too
-			// cause KOS has no idea they should be allocated automatically
-			// cause FASM has no idea they should be generated without contents
-			// cause Tomasz Grysztar didn't care
+			// Uninitialized data sections (IMAGE_SCN_CNT_UNINITIALIZED_DATA)
+			// are filled by zeroes and emitted. TODO: Revise if it's required.
 			char *buf = calloc(sh.SizeOfRawData, 1);
 
-			// Othervice it should be filled by its contents from source object
+			// Other sections are filled with their contents from the source object.
 			if (!(sh.Characteristics & 0x00000080)) {
 				if (!epep_get_section_contents(epep, &sh, buf)) {
 					ERROR_EPEP(epep);
@@ -402,9 +398,9 @@ static void build(ObjectIr *ir, const char *outname) {
 
 		if (sym.sym.symbol.SectionNumber == 0xffff ||
 			sym.sym.symbol.SectionNumber == 0xfffe ||
-			(sym.sym.symbol.StorageClass != 2 &&  // Not an external symbol
-			 sym.sym.symbol.StorageClass != 3 &&  // Not a static symbol
-			 sym.sym.symbol.StorageClass != 6)) { // Not a label
+			(sym.sym.symbol.StorageClass != 2 &&  // Not an external symbol.
+			 sym.sym.symbol.StorageClass != 3 &&  // Not a static symbol.
+			 sym.sym.symbol.StorageClass != 6)) { // Not a label.
 			fwrite(&sym.sym.symbol, 1, 18, out);
 		} else {
 			size_t sec_name_max = 1024;
@@ -479,8 +475,8 @@ static ObjectIr parse_objects(int argc, char **argv) {
 	size_t number_of_symbols = 0;
 
 	for (int i = 1; i < argc; i++) {
-		// If one arg is NULL, that means it was a parameter and was cleared
-		// It's not a input file name
+		// If one arg is NULL, that means it was a parameter and was cleared.
+		// It's not a input file name.
 		if (argv[i] == NULL) {
 			continue;
 		}
@@ -535,7 +531,7 @@ static ObjectIr parse_objects(int argc, char **argv) {
 			ERROR_EPEP(epep);
 		}
 
-		// Fill symbols table
+		// Fill symbols table.
 		log_info(" Symbols {\n");
 		for (size_t sym_i = 0; sym_i < epep->coffFileHeader.NumberOfSymbols; sym_i++) {
 			EpepCoffSymbol sym = { 0 };
@@ -596,7 +592,7 @@ static ObjectIr parse_objects(int argc, char **argv) {
 		}
 		log_info(" }\n");
 
-		// Set section offsets and fill unique section name set
+		// Set section offsets and fill unique section name set.
 		log_info(" Sections {\n");
 		for (size_t sec_i = 0; sec_i < epep->coffFileHeader.NumberOfSections; sec_i++) {
 			EpepSectionHeader sh = { 0 };
@@ -635,7 +631,7 @@ static ObjectIr parse_objects(int argc, char **argv) {
 			si.characteristics |= sh.Characteristics;
 			si.number_of_relocations += number_of_relocations;
 			if (si.number_of_relocations > 0xffff && !si.number_of_relocations_is_extended) {
-				// One more relocation to store the actual relocation number
+				// One more relocation to store the actual relocation number.
 				si.number_of_relocations++;
 				si.number_of_relocations_is_extended = 1;
 				const uint32_t flag_IMAGE_SCN_LNK_NRELOC_OVFL = 0x01000000;
@@ -685,14 +681,14 @@ int arg_got_flag(int argc, char **argv, ...) {
 	va_end(ap);
 
 	for (int i = 1; i < argc; i++) {
-		// If an argumetns was handled already then it's NULL here
+		// If an argumetn had been handled already then it's NULL here.
 		if (argv[i] == NULL) {
 			continue;
 		}
 		for (int arg_name_i = 0; arg_name_i < arg_name_c; arg_name_i++) {
 			char *arg_name = arg_names[arg_name_i];
 			if (!strcmp(argv[i], arg_name)) {
-				argv[i] = NULL; // Do not handle this argument as a input name
+				argv[i] = NULL; // Do not handle this argument as an input name.
 				return i;
 			}
 		}
@@ -741,8 +737,8 @@ int main(int argc, char **argv) {
 
 	emit_logs = arg_got_flag(argc, argv, "-v", "-verbose", "--verbose", 0);
 
-	// After handling arguments there only leaven unhandled ones
-	// They should be names if inputs. But if there's no input - exit
+	// After handling arguments there only leaven unhandled ones.
+	// They should be names if inputs. But if there's no input - exit.
 	int input_file_count = 0;
 	for (int i = 1; i < argc; i++) {
 		if (argv[i] != NULL) {
